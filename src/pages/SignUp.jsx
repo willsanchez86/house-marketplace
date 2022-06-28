@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
 
 import {
@@ -53,6 +54,7 @@ function SignUp() {
         displayName: name,
       });
 
+      // Create a copy of data and manipulate (Don't want to adjust the current Data States)
       const formDataCopy = { ...formData };
       delete formDataCopy.password;
       formDataCopy.timestamp = serverTimestamp();
@@ -62,7 +64,7 @@ function SignUp() {
       // Redirect to Home
       navigate('/');
     } catch (error) {
-      console.log(error);
+      toast.error('Something went wrong with registration');
     }
   };
 

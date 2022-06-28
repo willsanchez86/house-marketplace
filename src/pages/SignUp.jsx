@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Link, useNavigate } from 'react-router-dom';
-
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -9,10 +8,9 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase.config';
-
+import OAuth from '../components/OAuth';
 import visibilityIcon from '../assets/svg/visibilityIcon.svg';
 import { ReactComponent as KeyboardArrowRightIcon } from '../assets/svg/keyboardArrowRightIcon.svg';
-import { ReactComponent as GoogleIcon } from '../assets/svg/googleIcon.svg';
 
 function SignUp() {
   const [showPassword, setShowPassword] = useState(false);
@@ -72,62 +70,57 @@ function SignUp() {
     <>
       <div className="pageCOntainer">
         <h1 className="pageHeader">Welcome Back!</h1>
-        <main>
-          <form onSubmit={onSubmit}>
+        <form onSubmit={onSubmit}>
+          <input
+            type="text"
+            className="nameInput"
+            placeholder="Name"
+            id="name"
+            value={name}
+            onChange={onChange}
+          />
+          <input
+            type="email"
+            className="emailInput"
+            placeholder="Email"
+            id="email"
+            value={email}
+            onChange={onChange}
+          />
+          <div className="passwordInputDiv">
             <input
-              type="text"
-              className="nameInput"
-              placeholder="Name"
-              id="name"
-              value={name}
+              type={showPassword ? 'text' : 'password'}
+              className="passwordInput"
+              placeholder="Password"
+              id="password"
+              value={password}
               onChange={onChange}
             />
-            <input
-              type="email"
-              className="emailInput"
-              placeholder="Email"
-              id="email"
-              value={email}
-              onChange={onChange}
+            <img
+              src={visibilityIcon}
+              alt="Show Password"
+              className="showPassword"
+              onClick={() => setShowPassword((prevState) => !prevState)}
             />
-            <div className="passwordInputDiv">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                className="passwordInput"
-                placeholder="Password"
-                id="password"
-                value={password}
-                onChange={onChange}
+          </div>
+          <div className="signUpBar">
+            <p className="signUpText">Sign Up</p>
+            <button type="submit" className="signUpButton">
+              <KeyboardArrowRightIcon
+                fill="#ffffff"
+                width="34px"
+                height="34px"
               />
-              <img
-                src={visibilityIcon}
-                alt="Show Password"
-                className="showPassword"
-                onClick={() => setShowPassword((prevState) => !prevState)}
-              />
-            </div>
-            <div className="signUpBar">
-              <p className="signUpText">Sign Up</p>
-              <button type="submit" className="signUpButton">
-                <KeyboardArrowRightIcon
-                  fill="#ffffff"
-                  width="34px"
-                  height="34px"
-                />
-              </button>
-            </div>
-            <div className="socialLogin">
-              {/* <p>Sign up with</p>
-              <div className="socialIconDiv">
-                <GoogleIcon />
-              </div> */}
-
-              <Link to="/sign-in" className="registerLink">
-                Sign In Instead
-              </Link>
-            </div>
-          </form>
-        </main>
+            </button>
+          </div>
+        </form>
+        <div className="socialLogin">
+          <p>Sign Up With</p>
+          <OAuth />
+          <Link to="/sign-in" className="registerLink">
+            Sign In Instead
+          </Link>
+        </div>
       </div>
     </>
   );

@@ -72,7 +72,7 @@ function SignIn() {
                 onClick={() => setShowPassword((prevState) => !prevState)}
               />
             </div>
-            <Link to="forgot-password" className="forgotPasswordLink">
+            <Link to="/forgot-password" className="forgotPasswordLink">
               Forgot Password
             </Link>
             <div className="signInBar">
@@ -86,11 +86,10 @@ function SignIn() {
               </button>
             </div>
             <div className="socialLogin">
-              <p>Sign in with</p>
+              {/* <p>Sign in with</p>
               <div className="socialIconDiv">
                 <GoogleIcon />
-              </div>
-
+              </div> */}
               <Link to="/sign-up" className="registerLink">
                 Sign Up Instead
               </Link>

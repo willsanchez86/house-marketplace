@@ -117,10 +117,10 @@ function SignUp() {
               </button>
             </div>
             <div className="socialLogin">
-              <p>Sign up with</p>
+              {/* <p>Sign up with</p>
               <div className="socialIconDiv">
                 <GoogleIcon />
-              </div>
+              </div> */}
 
               <Link to="/sign-in" className="registerLink">
                 Sign In Instead

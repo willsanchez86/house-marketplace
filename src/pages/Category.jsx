@@ -18,7 +18,7 @@ import bedIcon from '../assets/svg/bedIcon.svg';
 import bathtubIcon from '../assets/svg/bathtubIcon.svg';
 //
 
-function Offers() {
+function Category() {
   const [listings, setListings] = useState(null);
   const [loading, setLoading] = useState(true);
   const params = useParams();
@@ -32,7 +32,7 @@ function Offers() {
         // Create a query
         const q = query(
           listingsRef,
-          where('offer', '==', true),
+          where('type', '==', params.categoryName),
           orderBy('timestamp', 'desc'),
           limit(10)
         );
@@ -53,7 +53,6 @@ function Offers() {
         setLoading(false);
       } catch (error) {
         toast.error('Could not fetch listings');
-        console.log(error);
       }
     };
 
@@ -63,7 +62,11 @@ function Offers() {
   return (
     <div className="category">
       <header>
-        <p className="pageHeader">Offers</p>
+        <p className="pageHeader">
+          {params.categoryName === 'rent'
+            ? 'Places for Rent'
+            : 'Places for Sale'}
+        </p>
       </header>
 
       {loading ? (
@@ -84,10 +87,10 @@ function Offers() {
           </main>
         </>
       ) : (
-        <p>There are no current offers</p>
+        <p>No listings for {useParams.categoryName}</p>
       )}
     </div>
   );
 }
 
-export default Offers;
+export default Category;

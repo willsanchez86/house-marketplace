@@ -743,6 +743,10 @@ button {
 .formButtonActive {
   background-color: #00cc66;
   color: #ffffff;
+  cursor: pointer;
+}
+.formButton {
+  cursor: pointer;
 }
 
 .flex {

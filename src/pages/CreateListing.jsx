@@ -26,7 +26,7 @@ function CreateListing() {
     address: '',
     offer: false,
     regularPrice: 0,
-    discountPrice: 0,
+    discountedPrice: 0,
     images: {}, //TODO: Images should be an array??
     latitude: 0,
     longitude: 0,
@@ -43,7 +43,7 @@ function CreateListing() {
     address,
     offer,
     regularPrice,
-    discountPrice,
+    discountedPrice,
     images,
     latitude,
     longitude,
@@ -83,7 +83,7 @@ function CreateListing() {
     setLoading(true);
 
     // Verify that discounted price is lower than regular
-    if (discountPrice >= regularPrice) {
+    if (discountedPrice >= regularPrice) {
       setLoading(false);
       toast.error('Discounted Price must be lower than Regular Price');
       return;
@@ -445,8 +445,8 @@ function CreateListing() {
               <input
                 className="formInputSmall"
                 type="number"
-                id="discountPrice"
-                value={discountPrice}
+                id="discountedPrice"
+                value={discountedPrice}
                 onChange={onMutate}
                 min="50"
                 max="750000000"

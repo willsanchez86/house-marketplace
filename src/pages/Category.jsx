@@ -13,10 +13,6 @@ import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
 import Spinner from '../components/Spinner';
 import ListingItem from '../components/ListingItem';
-//
-import bedIcon from '../assets/svg/bedIcon.svg';
-import bathtubIcon from '../assets/svg/bathtubIcon.svg';
-//
 
 function Category() {
   const [listings, setListings] = useState(null);

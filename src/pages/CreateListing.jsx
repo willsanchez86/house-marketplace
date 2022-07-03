@@ -1,11 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import Spinner from '../components/Spinner';
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
+import { v4 as uuidv4 } from 'uuid';
+import Spinner from '../components/Spinner';
 
 function CreateListing() {
-  const { geolocationEnabled, setGeolocationEnabled } = useState(true);
+  const [geolocationEnabled, setGeolocationEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     type: 'rent',
@@ -61,14 +70,140 @@ function CreateListing() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
-  if (loading) {
-    return <Spinner />;
-  }
+  //TODO: Apply Restriction on Geocode and Firebase API keys specific to this website after deployment
+  //! MUST ENABLE GEOCODE API FROM YOUR GOOGLE CONSOLE
+  // 1. Go to https://www.console.cloud.google.com
+  // 2. Select "API & Services" from the Dropdown
+  // 3. Click Enable APIs & Services (If geocode not yet enabled)
+  // 4. Search for Geocoding API --> Select Geocoding API --> Click Enable
 
-  //TODO:
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    console.log(formData);
+
+    setLoading(true);
+
+    // Verify that discounted price is lower than regular
+    if (discountPrice >= regularPrice) {
+      setLoading(false);
+      toast.error('Discounted Price must be lower than Regular Price');
+      return;
+    }
+
+    // Verify Images are 6 or less
+    if (images.length > 6) {
+      setLoading(false);
+      toast.error('Max 6 Images');
+    }
+
+    // GEOCODING
+    let geolocation = {};
+    let location;
+
+    if (geolocationEnabled) {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${address}&key=${process.env.REACT_APP_GEOCODE_API_KEY}`
+      );
+
+      const data = await response.json();
+
+      // Set geolocation if returned
+      geolocation.lat = data.results[0]?.geometry.location.lat ?? 0;
+      geolocation.lng = data.results[0]?.geometry.location.lng ?? 0;
+
+      // If data returned results, set the address to formatted address
+      location =
+        data.status === 'ZERO_RESULTS'
+          ? undefined
+          : data.results[0]?.formatted_address;
+
+      // Throw error if location wasn't returned
+      if (location === undefined || location.includes('undefined')) {
+        setLoading(false);
+        toast.error('Please enter a correct address');
+        return;
+      }
+    } else {
+      geolocation.lat = latitude;
+      geolocation.lng = longitude;
+    }
+
+    // Store image in firebase
+    const storeImage = async (image) => {
+      return new Promise((resolve, reject) => {
+        const storage = getStorage();
+        const fileName = `${auth.currentUser.uid}-${image.name}-${uuidv4()}`;
+        console.log(fileName);
+
+        // create storage reference --> pass in storage + path + filename
+        const storageRef = ref(storage, 'images/' + fileName);
+
+        // Upload the file metadata
+        const uploadTask = uploadBytesResumable(storageRef, image);
+
+        // Register three observers:
+        // 1. 'state_changed' observer, called any time the state changes
+        // 2. Error observer, called on failure
+        // 3. Completion observer, called on successful completion
+        uploadTask.on(
+          'state_changed',
+          (snapshot) => {
+            // Observe state change events such as progress, pause, and resume
+            // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+            const progress =
+              (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            console.log('Upload is ' + progress + '% done');
+            switch (snapshot.state) {
+              case 'paused':
+                console.log('Upload is paused');
+                break;
+              case 'running':
+                console.log('Upload is running');
+                break;
+              default:
+                break;
+            }
+          },
+          (error) => {
+            console.log(error);
+            reject(error);
+          },
+          () => {
+            // Handle successful uploads on complete
+            // For instance, return the download URL: https://firebasestorage.googleapis.com/...
+            getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+              resolve(downloadURL);
+            });
+          }
+        );
+      });
+    };
+
+    // Store the returned imageUrls in a new arrayh
+    const imageUrls = await Promise.all(
+      [...images].map((image) => storeImage(image))
+    ).catch(() => {
+      setLoading(false);
+      toast.error('Images not uploaded');
+      return;
+    });
+
+    // Create a separate copy of the formData, then add/delete fields as needed to match collection keys
+    const formDataCopy = {
+      ...formData,
+      imageUrls,
+      geolocation,
+      timestamp: serverTimestamp(),
+    };
+
+    formDataCopy.location = address;
+    delete formDataCopy.images;
+    delete formDataCopy.address;
+    !formDataCopy.offer && delete formDataCopy.discountedPrice; // Remove discountedPrice if no offer
+
+    const docRef = await addDoc(collection(db, 'listings'), formDataCopy);
+    setLoading(false);
+    toast.success('Listing saved');
+    navigate(`/category/${formDataCopy.type}/${docRef.id}`);
   };
 
   // Form Data Changed
@@ -83,11 +218,6 @@ function CreateListing() {
     if (e.target.value === 'false') {
       newValue = false;
     }
-
-    // // Edge Case to prevent numbers from converting to strings
-    // if (!Number.isNaN(parseInt(e.target.value))) {
-    //   newValue = parseInt(e.target.value);
-    // }
 
     // Files
     if (e.target.files) {
@@ -105,6 +235,10 @@ function CreateListing() {
       }));
     }
   };
+
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <div className="profile">

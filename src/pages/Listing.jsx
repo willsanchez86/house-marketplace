@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { db } from '../firebase.config';
 import { getAuth } from 'firebase/auth';
 import {
@@ -29,11 +30,9 @@ function Listing() {
   useEffect(() => {
     const fetchListing = async () => {
       const docRef = doc(db, 'listings', params.listingId);
-      console.log(params.listingId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
-        console.log(docSnap.data());
         setListing(docSnap.data());
         setLoading(false);
       }
@@ -98,7 +97,24 @@ function Listing() {
 
           <p className="listingLocationTitle">Location</p>
 
-          {/* MAP */}
+          <div className="leafletContainer">
+            <MapContainer
+              style={{ height: '100%', width: '100%' }}
+              center={[listing.geolocation.lat, listing.geolocation.lng]}
+              zoom={13}
+              scrollWheelZoom={false}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <Marker
+                position={[listing.geolocation.lat, listing.geolocation.lng]}
+              >
+                <Popup>{listing.location}</Popup>
+              </Marker>
+            </MapContainer>
+          </div>
 
           {auth.currentUser?.uid !== listing.userRef && (
             <Link

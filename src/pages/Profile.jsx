@@ -10,6 +10,7 @@ import {
   query,
   orderBy,
   limit,
+  deleteDoc,
   startAfter,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
@@ -73,7 +74,16 @@ function Profile() {
     fetchListings();
   }, []);
 
-  const onDelete = () => {};
+  const onDelete = async (listingId) => {
+    if (window.confirm('Are you sure you want to delete?')) {
+      await deleteDoc(doc(db, 'listings', listingId));
+      const updatedListings = listings.filter(
+        (listing) => listing.id !== listingId
+      );
+      setListings(updatedListings);
+      toast.success('Successfully deleted listing');
+    }
+  };
 
   const onEdit = () => {};
 
@@ -162,6 +172,7 @@ function Profile() {
                   key={listing.id}
                   data={listing.data}
                   id={listing.id}
+                  categoryName={listing.data.type}
                   onDelete={() => onDelete(listing.id)}
                   onEdit={() => onEdit(listing.id)}
                 />

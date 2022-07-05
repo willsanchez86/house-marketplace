@@ -1,9 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { updateDoc, doc } from 'firebase/firestore';
+import {
+  updateDoc,
+  doc,
+  collection,
+  getDocs,
+  where,
+  query,
+  orderBy,
+  limit,
+  startAfter,
+} from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
+import ListingItem from '../components/ListingItem';
 import arrowRight from '../assets/svg/keyboardArrowRightIcon.svg';
 import homeIcon from '../assets/svg/homeIcon.svg';
 
@@ -14,6 +25,8 @@ function Profile() {
     name: auth.currentUser.displayName,
     email: auth.currentUser.email,
   });
+  const [listings, setListings] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   const { name, email } = formData;
 
@@ -23,6 +36,46 @@ function Profile() {
     auth.signOut();
     navigate('/');
   };
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        // Reference to Collection
+        const listingsRef = collection(db, 'listings');
+
+        // Create a query
+        const q = query(
+          listingsRef,
+          where('userRef', '==', auth.currentUser.uid),
+          orderBy('timestamp', 'desc'),
+          limit(10)
+        );
+
+        // Execute Query
+        const querySnap = await getDocs(q);
+
+        let listings = [];
+
+        querySnap.forEach((doc) => {
+          return listings.push({
+            id: doc.id,
+            data: doc.data(),
+          });
+        });
+
+        setListings(listings);
+        setLoading(false);
+      } catch (error) {
+        toast.error('Could not fetch listings');
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  const onDelete = () => {};
+
+  const onEdit = () => {};
 
   // Updates Personal Details Changes in Firebase and FireStore
   const onSubmit = async () => {
@@ -99,6 +152,23 @@ function Profile() {
           <p>Sell or rent your home</p>
           <img src={arrowRight} alt="arrowRight" />
         </Link>
+
+        {!loading && listings?.length > 0 && (
+          <>
+            <p className="listingText">Your Listings</p>
+            <ul className="listingsList">
+              {listings.map((listing) => (
+                <ListingItem
+                  key={listing.id}
+                  data={listing.data}
+                  id={listing.id}
+                  onDelete={() => onDelete(listing.id)}
+                  onEdit={() => onEdit(listing.id)}
+                />
+              ))}
+            </ul>
+          </>
+        )}
       </main>
     </div>
   );

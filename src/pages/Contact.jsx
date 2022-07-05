@@ -32,6 +32,10 @@ function Contact() {
 
   const onChange = (e) => setMessage(e.target.value);
 
+  if (loading) {
+    return <Spinner />;
+  }
+
   return (
     <div className="pageContainer">
       <header>

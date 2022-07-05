@@ -17,6 +17,9 @@ import ListingItem from '../components/ListingItem';
 function Category() {
   const [listings, setListings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastFetchedListing, setLastFetchedListing] = useState(null);
+  const [noMoreListings, setNoMoreListings] = useState(false);
+
   const params = useParams();
 
   useEffect(() => {
@@ -36,6 +39,23 @@ function Category() {
         // Execute Query
         const querySnap = await getDocs(q);
 
+        // Run second query on the next 10 docs to determine if more listings remain
+        // Only check if first query returns documents --> this prevents a toast error message from appearing
+        if (querySnap.docs.length > 0) {
+          const lastVisible = querySnap.docs[querySnap.docs.length - 1];
+          setLastFetchedListing(lastVisible);
+
+          const nextQ = query(
+            listingsRef,
+            where('type', '==', params.categoryName),
+            orderBy('timestamp', 'desc'),
+            limit(10),
+            startAfter(lastVisible)
+          );
+          const nextQuerySnap = await getDocs(nextQ);
+          setNoMoreListings(nextQuerySnap.empty);
+        }
+
         let listings = [];
 
         querySnap.forEach((doc) => {
@@ -48,12 +68,63 @@ function Category() {
         setListings(listings);
         setLoading(false);
       } catch (error) {
+        console.log(error);
         toast.error('Could not fetch listings');
+        setLoading(false);
       }
     };
 
     fetchListings();
   }, [params.categoryName]);
+
+  // Pagination / Load More
+  const onFetchMoreListings = async () => {
+    try {
+      // Reference to Collection
+      const listingsRef = collection(db, 'listings');
+
+      // Create a query
+      const q = query(
+        listingsRef,
+        where('type', '==', params.categoryName),
+        orderBy('timestamp', 'desc'),
+        limit(10),
+        startAfter(lastFetchedListing)
+      );
+
+      // Execute Query
+      const querySnap = await getDocs(q);
+
+      // Run second query on the next 10 docs to determine if more listings remain
+      const lastVisible = querySnap.docs[querySnap.docs.length - 1];
+      setLastFetchedListing(lastVisible);
+
+      const nextQ = query(
+        listingsRef,
+        where('type', '==', params.categoryName),
+        orderBy('timestamp', 'desc'),
+        limit(10),
+        startAfter(lastVisible)
+      );
+      const nextQuerySnap = await getDocs(nextQ);
+
+      let listings = [];
+
+      querySnap.forEach((doc) => {
+        return listings.push({
+          id: doc.id,
+          data: doc.data(),
+        });
+      });
+
+      setListings((prevState) => [...prevState, ...listings]);
+      setNoMoreListings(nextQuerySnap.empty);
+      setLoading(false);
+    } catch (error) {
+      toast.error('Could not fetch listings');
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="category">
@@ -81,9 +152,17 @@ function Category() {
               ))}
             </ul>
           </main>
+
+          <br />
+          <br />
+          {!noMoreListings && (
+            <p className="loadMore" onClick={onFetchMoreListings}>
+              Load More
+            </p>
+          )}
         </>
       ) : (
-        <p>No listings for {useParams.categoryName}</p>
+        <p>No listings for {params.categoryName}</p>
       )}
     </div>
   );

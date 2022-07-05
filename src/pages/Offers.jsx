@@ -17,6 +17,9 @@ import ListingItem from '../components/ListingItem';
 function Offers() {
   const [listings, setListings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lastFetchedListing, setLastFetchedListing] = useState(null);
+  const [noMoreListings, setNoMoreListings] = useState(false);
+
   const params = useParams();
 
   useEffect(() => {
@@ -36,6 +39,23 @@ function Offers() {
         // Execute Query
         const querySnap = await getDocs(q);
 
+        // Run second query on the next 10 docs to determine if more listings remain
+        // Only check if first query returns documents --> this prevents a toast error message from appearing
+        if (querySnap.docs.length > 0) {
+          const lastVisible = querySnap.docs[querySnap.docs.length - 1];
+          setLastFetchedListing(lastVisible);
+
+          const nextQ = query(
+            listingsRef,
+            where('offer', '==', true),
+            orderBy('timestamp', 'desc'),
+            limit(10),
+            startAfter(lastVisible)
+          );
+          const nextQuerySnap = await getDocs(nextQ);
+          setNoMoreListings(nextQuerySnap.empty);
+        }
+
         let listings = [];
 
         querySnap.forEach((doc) => {
@@ -49,12 +69,61 @@ function Offers() {
         setLoading(false);
       } catch (error) {
         toast.error('Could not fetch listings');
-        console.log(error);
+        setLoading(false);
       }
     };
 
     fetchListings();
   }, [params.categoryName]);
+
+  // Pagination / Load More
+  const onFetchMoreListings = async () => {
+    try {
+      // Reference to Collection
+      const listingsRef = collection(db, 'listings');
+
+      // Create a query
+      const q = query(
+        listingsRef,
+        where('offer', '==', true),
+        orderBy('timestamp', 'desc'),
+        limit(10),
+        startAfter(lastFetchedListing)
+      );
+
+      // Execute Query
+      const querySnap = await getDocs(q);
+
+      // Run second query on the next 10 docs to determine if more listings remain
+      const lastVisible = querySnap.docs[querySnap.docs.length - 1];
+      setLastFetchedListing(lastVisible);
+
+      const nextQ = query(
+        listingsRef,
+        where('offer', '==', true),
+        orderBy('timestamp', 'desc'),
+        limit(10),
+        startAfter(lastVisible)
+      );
+      const nextQuerySnap = await getDocs(nextQ);
+
+      let listings = [];
+
+      querySnap.forEach((doc) => {
+        return listings.push({
+          id: doc.id,
+          data: doc.data(),
+        });
+      });
+
+      setListings((prevState) => [...prevState, ...listings]);
+      setNoMoreListings(nextQuerySnap.empty);
+      setLoading(false);
+    } catch (error) {
+      toast.error('Could not fetch listings');
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="category">
@@ -78,6 +147,14 @@ function Offers() {
               ))}
             </ul>
           </main>
+
+          <br />
+          <br />
+          {!noMoreListings && (
+            <p className="loadMore" onClick={onFetchMoreListings}>
+              Load More
+            </p>
+          )}
         </>
       ) : (
         <p>There are no current offers</p>

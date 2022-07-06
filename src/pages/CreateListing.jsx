@@ -179,7 +179,7 @@ function CreateListing() {
       });
     };
 
-    // Store the returned imageUrls in a new arrayh
+    // Store the returned imageUrls in a new array
     const imageUrls = await Promise.all(
       [...images].map((image) => storeImage(image))
     ).catch(() => {
@@ -195,6 +195,12 @@ function CreateListing() {
       geolocation,
       timestamp: serverTimestamp(),
     };
+
+    // Removes any leading zeros from price
+    if (formDataCopy.discountedPrice) {
+      formDataCopy.discountedPrice = formData.discountedPrice.toString();
+    }
+    formDataCopy.regularPrice = formData.regularPrice.toString();
 
     formDataCopy.location = address;
     delete formDataCopy.images;

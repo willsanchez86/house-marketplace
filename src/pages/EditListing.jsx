@@ -18,7 +18,7 @@ import { setOptions } from 'leaflet';
 
 function EditListing() {
   const [geolocationEnabled, setGeolocationEnabled] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState(false);
   const [imagesToRemove, setImagesToRemove] = useState([]); // ! SOLUTION
   const [formData, setFormData] = useState({
@@ -114,8 +114,6 @@ function EditListing() {
   const onSubmit = async (e) => {
     e.preventDefault();
 
-    setLoading(true);
-
     // Verify that discounted price is lower than regular
     if (discountedPrice >= regularPrice) {
       setLoading(false);
@@ -123,11 +121,11 @@ function EditListing() {
       return;
     }
 
-    // Verify Images are 6 or less
-    if (images.length > 6) {
-      setLoading(false);
-      toast.error('Max 6 Images');
-    }
+    // // Verify Images are 6 or less
+    // if (images?.length > 6) {
+    //   setLoading(false);
+    //   toast.error('Max 6 Images');
+    // }
 
     // GEOCODING
     let geolocation = {};
@@ -211,22 +209,85 @@ function EditListing() {
       });
     };
 
-    // Store the returned imageUrls in a new array
-    const imageUrls = await Promise.all(
-      [...images].map((image) => storeImage(image))
-    ).catch(() => {
+    // ! Throw an error if new image total is still 6 or less
+    const availableImageStorage =
+      6 - listing.imageUrls.length + imagesToRemove.length;
+    // Return an error only if new images were added AND the total files exceeds 6
+    if (images && images.length > availableImageStorage) {
       setLoading(false);
-      toast.error('Images not uploaded');
+      toast.error(
+        'Image Upload failed - Too many total images for this listing'
+      );
       return;
+    }
+
+    // IF new images were uploaded, Store the returned imageUrls in a new array
+    let newImageUrls;
+    if (images) {
+      newImageUrls = await Promise.all(
+        [...images].map((image) => storeImage(image))
+      ).catch(() => {
+        setLoading(false);
+        toast.error('Images not uploaded');
+        return;
+      });
+    }
+
+    // ! Function to Delete an Image from Storage from Storage
+    const deleteImage = async (imgUrl) => {
+      // Split Url to get the filename in the middle
+      let fileName = imgUrl.split('images%2F');
+      fileName = fileName[1].split('?alt');
+      fileName = fileName[0];
+
+      const storage = getStorage();
+
+      // Create a reference to the file to delete
+      const imgRef = ref(storage, `images/${fileName}`);
+
+      // Returns a promise
+      return deleteObject(imgRef);
+    };
+
+    //! Delete each image in imagesToRemove from storage
+    imagesToRemove.forEach(async (imgUrl) => {
+      await deleteImage(imgUrl) // Handle the returned promise
+        .then(() => {
+          toast.success('Image was successfully removed from storage');
+        })
+        .catch((error) => {
+          console.log(error);
+          toast.error('Deletion failed');
+          setLoading(false);
+        });
     });
+
+    //! Remove all imagesToRemove from current imageUrls for this listing
+    const remainingListingImages = listing.imageUrls.filter(
+      (val) => !imagesToRemove.includes(val)
+    );
+
+    //! Merge ImageUrls with newImageUrls (if defined) --> Then Delete newImageUrls
+    let mergedImageUrls;
+    if (newImageUrls) {
+      mergedImageUrls = [...remainingListingImages, ...newImageUrls];
+    } else {
+      mergedImageUrls = [...remainingListingImages];
+    }
 
     // Create a separate copy of the formData, then add/delete fields as needed to match collection keys
     const formDataCopy = {
       ...formData,
-      imageUrls,
+      imageUrls: mergedImageUrls,
       geolocation,
       timestamp: serverTimestamp(),
     };
+
+    // Removes any leading zeros from price
+    if (formDataCopy.discountedPrice) {
+      formDataCopy.discountedPrice = formData.discountedPrice.toString();
+    }
+    formDataCopy.regularPrice = formData.regularPrice.toString();
 
     formDataCopy.location = address;
     delete formDataCopy.images;
@@ -287,28 +348,6 @@ function EditListing() {
           return url !== e.target.value;
         })
       );
-    }
-  };
-
-  // Delete Image // ! SOLUTION
-  const onDelete = async (imgUrl) => {
-    // Split Url to get the filename in the middle
-    let fileName = imgUrl.split('images%2F');
-    fileName = fileName[1].split('?alt');
-    fileName = fileName[0];
-    // console.log(name);
-
-    const storage = getStorage();
-
-    // Create a reference to the file to delete
-    const imgRef = ref(storage, `images/${fileName}`);
-
-    // Delete the file
-    try {
-      await deleteObject(imgRef);
-    } catch (error) {
-      console.log(error);
-      toast.error('Deletion failed');
     }
   };
 
@@ -560,10 +599,16 @@ function EditListing() {
               ))}
           </div>
 
-          {/*  */}
           <p style={{ paddingLeft: '10px', fontSize: '0.8rem' }}>
-            ADD: Choose files to add. (Max 6 total)
+            ADD: Choose files to add. (
+            {listing?.imageUrls &&
+              imagesToRemove &&
+              ` ${
+                6 - listing.imageUrls.length + imagesToRemove.length
+              } image slots remaining`}{' '}
+            - Max 6 total )
           </p>
+          {/*  */}
           <input
             className="formInputFile"
             type="file"
@@ -572,7 +617,6 @@ function EditListing() {
             max="6"
             accept=".jpg,.png,.jpeg"
             multiple
-            required
           />
           <button type="submit" className="primaryButton createListingButton">
             Update Listing

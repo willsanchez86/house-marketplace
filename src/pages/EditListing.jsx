@@ -1,21 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import {
   getStorage,
   ref,
   uploadBytesResumable,
   getDownloadURL,
+  deleteObject, // ! SOLUTION
 } from 'firebase/storage';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
 import { v4 as uuidv4 } from 'uuid';
 import Spinner from '../components/Spinner';
+import { ReactComponent as DeleteIcon } from '../assets/svg/deleteIcon.svg';
+import { setOptions } from 'leaflet';
 
-function CreateListing() {
+function EditListing() {
   const [geolocationEnabled, setGeolocationEnabled] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [listing, setListing] = useState(false);
+  const [imagesToRemove, setImagesToRemove] = useState([]); // ! SOLUTION
   const [formData, setFormData] = useState({
     type: 'rent',
     name: '',
@@ -49,9 +54,37 @@ function CreateListing() {
     longitude,
   } = formData;
 
+  const params = useParams();
   const auth = getAuth();
   const navigate = useNavigate();
   const isMounted = useRef(true);
+
+  // Redirect if listing is not user's
+  useEffect(() => {
+    if (listing && listing.userRef !== auth.currentUser.uid) {
+      toast.error("You're not authorized to edit that listing");
+      navigate('/');
+    }
+  });
+
+  // Fetch listing to edit
+  useEffect(() => {
+    const fetchListing = async () => {
+      const docRef = doc(db, 'listings', params.listingId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        setListing(docSnap.data());
+        setFormData({ ...docSnap.data(), address: docSnap.data().location });
+        setLoading(false);
+      } else {
+        navigate('/');
+        toast.error('Listing does not exist');
+      }
+    };
+
+    fetchListing();
+  }, [params.listingId, navigate]);
 
   // Sets userRef to logged in user
   useEffect(() => {
@@ -133,7 +166,6 @@ function CreateListing() {
       return new Promise((resolve, reject) => {
         const storage = getStorage();
         const fileName = `${auth.currentUser.uid}-${image.name}-${uuidv4()}`;
-        console.log(fileName);
 
         // create storage reference --> pass in storage + path + filename
         const storageRef = ref(storage, 'images/' + fileName);
@@ -179,7 +211,7 @@ function CreateListing() {
       });
     };
 
-    // Store the returned imageUrls in a new arrayh
+    // Store the returned imageUrls in a new array
     const imageUrls = await Promise.all(
       [...images].map((image) => storeImage(image))
     ).catch(() => {
@@ -201,7 +233,9 @@ function CreateListing() {
     delete formDataCopy.address;
     !formDataCopy.offer && delete formDataCopy.discountedPrice; // Remove discountedPrice if no offer
 
-    const docRef = await addDoc(collection(db, 'listings'), formDataCopy);
+    // Update in firestore
+    const docRef = doc(db, 'listings', params.listingId);
+    await updateDoc(docRef, formDataCopy);
     setLoading(false);
     toast.success('Listing saved');
     navigate(`/category/${formDataCopy.type}/${docRef.id}`);
@@ -237,6 +271,47 @@ function CreateListing() {
     }
   };
 
+  const handleChange = (e) => {
+    if (e.target.checked) {
+      // Case 1 : The user checks the box
+      setImagesToRemove([...imagesToRemove, e.target.value]);
+    } else {
+      // Case 2  : The user unchecks the box
+      //   const index = imagesToRemove.indexOf(e.target.value);
+
+      //   if (index > -1) {
+      //     // only splice array when item is found
+      //     setImagesToRemove(imagesToRemove.splice(index, 1));
+      setImagesToRemove((current) =>
+        current.filter((url) => {
+          return url !== e.target.value;
+        })
+      );
+    }
+  };
+
+  // Delete Image // ! SOLUTION
+  const onDelete = async (imgUrl) => {
+    // Split Url to get the filename in the middle
+    let fileName = imgUrl.split('images%2F');
+    fileName = fileName[1].split('?alt');
+    fileName = fileName[0];
+    // console.log(name);
+
+    const storage = getStorage();
+
+    // Create a reference to the file to delete
+    const imgRef = ref(storage, `images/${fileName}`);
+
+    // Delete the file
+    try {
+      await deleteObject(imgRef);
+    } catch (error) {
+      console.log(error);
+      toast.error('Deletion failed');
+    }
+  };
+
   if (loading) {
     return <Spinner />;
   }
@@ -244,7 +319,7 @@ function CreateListing() {
   return (
     <div className="profile">
       <header>
-        <p className="pageHeader">Create a Listing</p>
+        <p className="pageHeader">Edit Listing</p>
       </header>
 
       <main>
@@ -455,10 +530,39 @@ function CreateListing() {
               />
             </>
           )}
+          {/* TODO: Display Current Images (Noting Cover) with Delete Buttons --> Then display "Add Image" Option */}
+          <label className="formLabel">Listing Images</label>
+          <p style={{ paddingLeft: '10px', fontSize: '0.8rem' }}>
+            DELETE: Check the box of each image you wish to delete
+          </p>
+          {/*  */}
+          <div className="editListingImgContainer">
+            {listing?.imageUrls &&
+              listing.imageUrls.map((img, index) => (
+                <div
+                  key={index}
+                  className="editListingImg"
+                  style={{
+                    background: `url(${img}) center no-repeat`,
+                    backgroundSize: 'cover',
+                  }}
+                >
+                  {index === 0 && <p className="editListingImgText">Cover</p>}
 
-          <label className="formLabel">Images</label>
-          <p className="imagesInfo">
-            The first image will be the cover (max 6).
+                  <input
+                    type="checkbox"
+                    id="imageDelete"
+                    name="imageDelete"
+                    value={img}
+                    onChange={handleChange}
+                  />
+                </div>
+              ))}
+          </div>
+
+          {/*  */}
+          <p style={{ paddingLeft: '10px', fontSize: '0.8rem' }}>
+            ADD: Choose files to add. (Max 6 total)
           </p>
           <input
             className="formInputFile"
@@ -471,7 +575,7 @@ function CreateListing() {
             required
           />
           <button type="submit" className="primaryButton createListingButton">
-            Create Listing
+            Update Listing
           </button>
         </form>
       </main>
@@ -479,4 +583,4 @@ function CreateListing() {
   );
 }
 
-export default CreateListing;
+export default EditListing;

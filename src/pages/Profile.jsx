@@ -9,9 +9,7 @@ import {
   where,
   query,
   orderBy,
-  limit,
   deleteDoc,
-  startAfter,
 } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
@@ -48,8 +46,7 @@ function Profile() {
         const q = query(
           listingsRef,
           where('userRef', '==', auth.currentUser.uid),
-          orderBy('timestamp', 'desc'),
-          limit(10)
+          orderBy('timestamp', 'desc')
         );
 
         // Execute Query
@@ -72,7 +69,7 @@ function Profile() {
     };
 
     fetchListings();
-  }, []);
+  }, [auth.currentUser.uid]);
 
   const onDelete = async (listingId) => {
     if (window.confirm('Are you sure you want to delete?')) {
@@ -85,7 +82,7 @@ function Profile() {
     }
   };
 
-  const onEdit = () => {};
+  const onEdit = (listingId) => navigate(`/edit-listing/${listingId}`);
 
   // Updates Personal Details Changes in Firebase and FireStore
   const onSubmit = async () => {

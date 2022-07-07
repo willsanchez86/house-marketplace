@@ -6,21 +6,20 @@ import {
   ref,
   uploadBytesResumable,
   getDownloadURL,
-  deleteObject, // ! SOLUTION
+  deleteObject, // TODO: Import deleteObject function from firebase/storage
 } from 'firebase/storage';
 import { serverTimestamp, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase.config';
 import { toast } from 'react-toastify';
 import { v4 as uuidv4 } from 'uuid';
 import Spinner from '../components/Spinner';
-import { ReactComponent as DeleteIcon } from '../assets/svg/deleteIcon.svg';
-import { setOptions } from 'leaflet';
 
 function EditListing() {
+  // eslint-disable-next-line
   const [geolocationEnabled, setGeolocationEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [listing, setListing] = useState(false);
-  const [imagesToRemove, setImagesToRemove] = useState([]); // ! SOLUTION
+  const [imagesToRemove, setImagesToRemove] = useState([]); // TODO: instantiate state as an array for Images the user wants to delete
   const [formData, setFormData] = useState({
     type: 'rent',
     name: '',
@@ -104,7 +103,7 @@ function EditListing() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMounted]);
 
-  //TODO: Apply Restriction on Geocode and Firebase API keys specific to this website after deployment
+  //! TODO: Apply Restriction on Geocode and Firebase API keys specific to this website after deployment
   //! MUST ENABLE GEOCODE API FROM YOUR GOOGLE CONSOLE
   // 1. Go to https://www.console.cloud.google.com
   // 2. Select "API & Services" from the Dropdown
@@ -209,7 +208,7 @@ function EditListing() {
       });
     };
 
-    // ! Throw an error if new image total is still 6 or less
+    // TODO: Throw an error if new image TOTAL is not 6 or less
     const availableImageStorage =
       6 - listing.imageUrls.length + imagesToRemove.length;
     // Return an error only if new images were added AND the total files exceeds 6
@@ -221,7 +220,7 @@ function EditListing() {
       return;
     }
 
-    // IF new images were uploaded, Store the returned imageUrls in a new array
+    // TODO: IF new images were uploaded, Store the returned imageUrls in a new array
     let newImageUrls;
     if (images) {
       newImageUrls = await Promise.all(
@@ -233,7 +232,7 @@ function EditListing() {
       });
     }
 
-    // ! Function to Delete an Image from Storage from Storage
+    // TODO: Function to Delete an Image from Storage from Storage
     const deleteImage = async (imgUrl) => {
       // Split Url to get the filename in the middle
       let fileName = imgUrl.split('images%2F');
@@ -249,7 +248,7 @@ function EditListing() {
       return deleteObject(imgRef);
     };
 
-    //! Delete each image in imagesToRemove from storage
+    //TODO: Delete each image in imagesToRemove from storage
     imagesToRemove.forEach(async (imgUrl) => {
       await deleteImage(imgUrl) // Handle the returned promise
         .then(() => {
@@ -262,12 +261,12 @@ function EditListing() {
         });
     });
 
-    //! Remove all imagesToRemove from current imageUrls for this listing
+    //TODO: Remove all imagesToRemove from current imageUrls for this listing
     const remainingListingImages = listing.imageUrls.filter(
       (val) => !imagesToRemove.includes(val)
     );
 
-    //! Merge ImageUrls with newImageUrls (if defined) --> Then Delete newImageUrls
+    //TODO: Merge ImageUrls with newImageUrls (if defined) --> Then Delete newImageUrls
     let mergedImageUrls;
     if (newImageUrls) {
       mergedImageUrls = [...remainingListingImages, ...newImageUrls];
@@ -332,17 +331,13 @@ function EditListing() {
     }
   };
 
+  // TODO: handleChange on image checkboxes
   const handleChange = (e) => {
     if (e.target.checked) {
       // Case 1 : The user checks the box
       setImagesToRemove([...imagesToRemove, e.target.value]);
     } else {
       // Case 2  : The user unchecks the box
-      //   const index = imagesToRemove.indexOf(e.target.value);
-
-      //   if (index > -1) {
-      //     // only splice array when item is found
-      //     setImagesToRemove(imagesToRemove.splice(index, 1));
       setImagesToRemove((current) =>
         current.filter((url) => {
           return url !== e.target.value;
@@ -569,12 +564,12 @@ function EditListing() {
               />
             </>
           )}
+
           {/* TODO: Display Current Images (Noting Cover) with Delete Buttons --> Then display "Add Image" Option */}
           <label className="formLabel">Listing Images</label>
           <p style={{ paddingLeft: '10px', fontSize: '0.8rem' }}>
             DELETE: Check the box of each image you wish to delete
           </p>
-          {/*  */}
           <div className="editListingImgContainer">
             {listing?.imageUrls &&
               listing.imageUrls.map((img, index) => (
@@ -598,7 +593,7 @@ function EditListing() {
                 </div>
               ))}
           </div>
-
+          {/* Displays the number of remaining spots available after checked images are deleted */}
           <p style={{ paddingLeft: '10px', fontSize: '0.8rem' }}>
             ADD: Choose files to add. (
             {listing?.imageUrls &&
@@ -609,6 +604,7 @@ function EditListing() {
             - Max 6 total )
           </p>
           {/*  */}
+
           <input
             className="formInputFile"
             type="file"

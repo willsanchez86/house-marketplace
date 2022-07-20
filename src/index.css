@@ -430,10 +430,16 @@ button {
 
 .categoryListingDetails {
   width: 65%;
+  height: 90px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-bottom: 1em;
 }
 @media (min-width: 1024px) {
   .categoryListingDetails {
     width: 79%;
+    height: 180px;
   }
 }
 

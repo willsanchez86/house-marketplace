@@ -16,19 +16,22 @@ function ListingItem({ data, id, categoryName, onDelete, onEdit }) {
           }}
         ></div>
         <div className="categoryListingDetails">
-          <p className="categoryListingLocation">{data.location}</p>
-          <p className="categoryListingName">{data.name}</p>
-          <p className="categoryListingPrice">
-            $
-            {data.offer
-              ? data.discountedPrice
-                  .toString()
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-              : data.regularPrice
-                  .toString()
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-            {categoryName === 'rent' && ' / Month'}
-          </p>
+          <div>
+            <p className="categoryListingLocation">{data.location}</p>
+            <p className="categoryListingName">{data.name}</p>
+            <p className="categoryListingPrice">
+              $
+              {data.offer
+                ? data.discountedPrice
+                    .toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+                : data.regularPrice
+                    .toString()
+                    .replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              {categoryName === 'rent' && ' / Month'}
+            </p>
+          </div>
+
           <div className="categoryListingInfoDiv">
             <img src={bedIcon} alt="bed" />
             <p className="categoryListingInfoText">

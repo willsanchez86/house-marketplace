@@ -126,6 +126,28 @@ function Category() {
     }
   };
 
+  //TODO: Implement fetch retrieval of rapidAPI
+  // useEffect(() => {
+  //   const fetchRealtyListings = async () => {
+  //     const options = {
+  //       method: 'GET',
+  //       headers: {
+  //         'X-RapidAPI-Key': process.env.REACT_APP_RAPID_API_KEY,
+  //         'X-RapidAPI-Host': 'realty-in-us.p.rapidapi.com',
+  //       },
+  //     };
+
+  //     const response = await fetch(
+  //       'https://realty-in-us.p.rapidapi.com/properties/list-for-rent?state_code=NY&city=New%20York%20City&limit=200&offset=0&sort=relevance&price_min=50',
+  //       options
+  //     );
+  //     const { listings } = await response.json();
+  //     console.log(listings);
+  //   };
+
+  //   fetchRealtyListings();
+  // }, []);
+
   return (
     <div className="category">
       <header>

@@ -78,13 +78,13 @@ button {
   cursor: pointer;
   position: absolute;
   top: -3%;
-  right: -2%;
+  right: 1%;
 }
 .editIcon {
   cursor: pointer;
   position: absolute;
   top: -3.4%;
-  right: 20px;
+  right: 5%;
 }
 
 .pageContainer,
@@ -184,7 +184,7 @@ button {
   color: #8f8f8f;
 }
 .navbarListItemNameActive {
-  color: #2c2c2c;
+  color: #14cc70;
 }
 
 .nameInput {
@@ -401,6 +401,8 @@ button {
 
 .categoryListings {
   padding: 0;
+  display: flex;
+  flex-wrap: wrap;
 }
 
 .categoryListing {
@@ -409,6 +411,12 @@ button {
   align-items: center;
   margin-bottom: 1rem;
   position: relative;
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .categoryListing {
+    width: 50%;
+  }
 }
 
 .categoryListingLink {
@@ -416,14 +424,13 @@ button {
 }
 
 .categoryListingImg {
-  width: 30%;
+  width: 35%;
   height: 100px;
   border-radius: 1.5rem;
   object-fit: cover;
 }
 @media (min-width: 1024px) {
   .categoryListingImg {
-    width: 19%;
     height: 217px;
   }
 }
@@ -435,6 +442,7 @@ button {
   flex-direction: column;
   justify-content: space-between;
   margin-bottom: 1em;
+  margin-left: 10px;
 }
 @media (min-width: 1024px) {
   .categoryListingDetails {
@@ -496,6 +504,21 @@ button {
 }
 
 .shareIconDiv {
+  cursor: pointer;
+  position: fixed;
+  top: 3%;
+  right: 5%;
+  z-index: 2;
+  background-color: #ffffff;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.saveIconDiv {
   cursor: pointer;
   position: fixed;
   top: 3%;
@@ -715,7 +738,7 @@ button {
   font-weight: 600;
 }
 
-.lisitingsList {
+.listingsList {
   padding: 0;
 }
 

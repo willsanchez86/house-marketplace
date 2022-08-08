@@ -126,7 +126,7 @@ function Category() {
     }
   };
 
-  //TODO: Implement fetch retrieval of rapidAPI
+  // API Integration for later versions
   // useEffect(() => {
   //   const fetchRealtyListings = async () => {
   //     const options = {
@@ -157,34 +157,36 @@ function Category() {
             : 'Places for Sale'}
         </p>
       </header>
+      <div className="listingGroup">
+        {loading ? (
+          <Spinner />
+        ) : listings && listings.length > 0 ? (
+          <>
+            <main>
+              <ul className="categoryListings">
+                {listings.map((listing) => (
+                  <ListingItem
+                    data={listing.data}
+                    id={listing.id}
+                    key={listing.id}
+                    categoryName={params.categoryName}
+                  />
+                ))}
+              </ul>
+            </main>
 
-      {loading ? (
-        <Spinner />
-      ) : listings && listings.length > 0 ? (
-        <>
-          <main>
-            <ul className="categoryListings">
-              {listings.map((listing) => (
-                <ListingItem
-                  data={listing.data}
-                  id={listing.id}
-                  key={listing.id}
-                  categoryName={params.categoryName}
-                />
-              ))}
-            </ul>
-          </main>
+            <br />
+            <br />
+          </>
+        ) : (
+          <p>No listings for {params.categoryName}</p>
+        )}
+      </div>
 
-          <br />
-          <br />
-          {!noMoreListings && (
-            <p className="loadMore" onClick={onFetchMoreListings}>
-              Load More
-            </p>
-          )}
-        </>
-      ) : (
-        <p>No listings for {params.categoryName}</p>
+      {!noMoreListings && (
+        <p className="loadMore" onClick={onFetchMoreListings}>
+          Load More
+        </p>
       )}
     </div>
   );

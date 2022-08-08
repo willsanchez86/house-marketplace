@@ -284,9 +284,12 @@ function EditListing() {
 
     // Removes any leading zeros from price
     if (formDataCopy.discountedPrice) {
-      formDataCopy.discountedPrice = formData.discountedPrice.toString();
+      formDataCopy.discountedPrice = parseInt(
+        formData.discountedPrice.toString(),
+        10
+      );
     }
-    formDataCopy.regularPrice = formData.regularPrice.toString();
+    formDataCopy.regularPrice = parseInt(formData.regularPrice.toString(), 10);
 
     formDataCopy.location = address;
     delete formDataCopy.images;
